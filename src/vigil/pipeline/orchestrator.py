@@ -23,6 +23,7 @@ class ConversationOrchestrator:
         attacker_system_prompt: str,
         target_system_prompt: str,
         max_turns: int = 10,
+        min_turns: int = 3,
         max_tokens: int = 4096,
         temperature: float = 1.0,
         scenario_id: str = "",
@@ -33,6 +34,7 @@ class ConversationOrchestrator:
         self.attacker_system_prompt = attacker_system_prompt
         self.target_system_prompt = target_system_prompt
         self.max_turns = max_turns
+        self.min_turns = min_turns
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.scenario_id = scenario_id
@@ -44,16 +46,18 @@ class ConversationOrchestrator:
 
     async def _attacker_turn(self, turn: int) -> str:
         """Get the attacker's next message."""
-        # Add continuation hint on later turns if needed
         from vigil.prompts.attacks import make_continuation_prompt
-        hint = make_continuation_prompt(turn, self.max_turns)
+
+        hint = make_continuation_prompt(turn, self.max_turns, self.min_turns)
         messages = list(self.attacker_messages)
         if hint and turn > 0:
             messages.append({"role": "user", "content": hint})
 
         response = await self.client.chat_with_retry(
             model=self.attacker_model,
-            messages=messages if messages else [{"role": "user", "content": "Begin the conversation. Send your first message to the target."}],
+            messages=messages if messages else [
+                {"role": "user", "content": "Begin the conversation. Send your first message to the target."}
+            ],
             system_prompt=self.attacker_system_prompt,
             max_tokens=self.max_tokens,
             temperature=self.temperature,
@@ -71,25 +75,39 @@ class ConversationOrchestrator:
         )
         return self.client.extract_content(response)
 
+    def _strip_end_tag(self, text: str) -> str:
+        """Remove the END tag from text content."""
+        return text.replace(END_TAG, "").strip()
+
     async def run(self) -> Transcript:
         """Run the full multi-turn conversation."""
         logger.info(
             f"Starting conversation: {self.attacker_model} vs {self.target_model} "
-            f"(max {self.max_turns} turns)"
+            f"(min {self.min_turns}, max {self.max_turns} turns)"
         )
 
         for turn in range(self.max_turns):
             # Attacker turn
             attacker_text = await self._attacker_turn(turn)
+
+            # Enforce minimum turns: strip <END> if we haven't reached min_turns
+            has_end = END_TAG in attacker_text
+            if has_end and turn < self.min_turns:
+                logger.info(
+                    f"Turn {turn + 1}: Attacker tried to end early "
+                    f"(min_turns={self.min_turns}), stripping <END>"
+                )
+                attacker_text = self._strip_end_tag(attacker_text)
+                has_end = False
+
             self.transcript_messages.append(
-                Message(role="attacker", content=attacker_text, model=self.attacker_model)
+                Message(role="attacker", content=self._strip_end_tag(attacker_text) if has_end else attacker_text, model=self.attacker_model)
             )
 
-            # Check for end signal
-            if END_TAG in attacker_text:
-                clean_text = attacker_text.replace(END_TAG, "").strip()
+            # Check for end signal (only after min_turns)
+            if has_end:
+                clean_text = self._strip_end_tag(attacker_text)
                 if clean_text:
-                    # Add the clean message to target history so they can respond
                     self.target_messages.append({"role": "user", "content": clean_text})
                 logger.info(f"Attacker ended conversation at turn {turn + 1}")
                 break
@@ -104,7 +122,6 @@ class ConversationOrchestrator:
             )
 
             # Add target response to attacker's history
-            # Attacker sees target's response as "user" (assistant-user alternation)
             self.attacker_messages.append({"role": "assistant", "content": attacker_text})
             self.attacker_messages.append({"role": "user", "content": target_text})
 
@@ -120,5 +137,7 @@ class ConversationOrchestrator:
                 "attacker_model": self.attacker_model,
                 "target_model": self.target_model,
                 "total_turns": len(self.transcript_messages),
+                "min_turns": self.min_turns,
+                "max_turns": self.max_turns,
             },
         )

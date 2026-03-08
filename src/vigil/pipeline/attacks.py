@@ -28,9 +28,14 @@ async def _run_single_attack(
             client=client,
             attacker_model=config.attacker_model,
             target_model=config.target_model,
-            attacker_system_prompt=make_attacker_system_prompt(behavior, scenario),
+            attacker_system_prompt=make_attacker_system_prompt(
+                behavior, scenario,
+                persistence=config.attacker_persistence,
+                min_turns=config.min_turns,
+            ),
             target_system_prompt=make_target_system_prompt(scenario),
             max_turns=config.num_turns,
+            min_turns=config.min_turns,
             max_tokens=config.max_tokens,
             temperature=config.temperature,
             scenario_id=scenario.scenario_id,
@@ -44,12 +49,16 @@ async def execute_attacks(
     behavior: Behavior,
     scenarios: list[Scenario],
     client: VigilClient,
-    max_concurrent: int = 5,
 ) -> list[Transcript]:
     """Execute all attack scenarios concurrently."""
-    logger.info(f"Executing {len(scenarios)} attack scenarios (max {max_concurrent} concurrent)...")
+    logger.info(
+        f"Executing {len(scenarios)} attack scenarios "
+        f"(max {config.max_concurrent} concurrent, "
+        f"persistence={config.attacker_persistence}, "
+        f"min_turns={config.min_turns})..."
+    )
 
-    semaphore = asyncio.Semaphore(max_concurrent)
+    semaphore = asyncio.Semaphore(config.max_concurrent)
     tasks = []
 
     for scenario in scenarios:

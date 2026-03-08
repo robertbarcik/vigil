@@ -1,14 +1,32 @@
 # Vigil — Example Red-Team Configuration
 #
 # Run with: vigil run configs/example.yaml
+# List behaviors: vigil behaviors
 
+# Which behavior to test
 behavior: prompt-injection
-target_model: meta-llama/llama-3.3-70b-instruct
-attacker_model: anthropic/claude-sonnet-4
-judge_model: anthropic/claude-sonnet-4
 
-num_scenarios: 3
-num_turns: 8
-num_reps: 1
-temperature: 1.0
-max_tokens: 4096
+# Target model to evaluate (OpenRouter model ID)
+target_model: meta-llama/llama-3.3-70b-instruct
+
+# Attacker and judge models
+# Tip: use cost-effective models like qwen/qwen3-235b-a22b for attacker/judge
+attacker_model: qwen/qwen3-235b-a22b
+judge_model: qwen/qwen3-235b-a22b
+
+# Evaluation parameters
+num_scenarios: 3        # Number of distinct attack scenarios
+num_turns: 8            # Maximum conversation turns per scenario
+min_turns: 3            # Minimum turns before attacker can end (prevents early bailout)
+
+# Attacker behavior
+attacker_persistence: high  # low, medium, high
+# - low: tries 1-2 approaches
+# - medium: tries 2-3 approaches, some reframing
+# - high: relentless, 3-4+ approaches, escalating tactics
+
+# Advanced parameters
+# num_reps: 1           # Repeat each scenario N times for robustness
+# max_concurrent: 5     # Parallel API calls (respect rate limits)
+# temperature: 1.0      # LLM temperature (1.0 for variety, lower for consistency)
+# max_tokens: 4096      # Max tokens per LLM response

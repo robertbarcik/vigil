@@ -41,9 +41,12 @@ class RunConfig(BaseModel):
     judge_model: str = "anthropic/claude-sonnet-4"
     num_scenarios: int = 5
     num_turns: int = 10
+    min_turns: int = 3  # attacker must engage for at least this many turns
     num_reps: int = 1
     temperature: float = 1.0
     max_tokens: int = 4096
+    attacker_persistence: str = "high"  # low, medium, high — how hard the attacker pushes
+    max_concurrent: int = 5  # concurrent API calls
 
 
 # --- Pipeline stage outputs ---
