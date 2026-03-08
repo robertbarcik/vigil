@@ -8,7 +8,7 @@
     <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
 
     <!-- Quick stats -->
-    <div class="grid grid-cols-3 gap-6 mb-10">
+    <div class="grid grid-cols-4 gap-6 mb-10">
         <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
             <div class="text-3xl font-bold text-white">{{ runs|length }}</div>
             <div class="text-sm text-gray-400 mt-1">Red-Team Runs</div>
@@ -18,9 +18,12 @@
             <div class="text-sm text-gray-400 mt-1">Oversight Sessions</div>
         </div>
         <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
-            {% set ns = namespace(total=0) %}{% for run in runs %}{% if run.result %}{% set ns.total = ns.total + run.result.summary.total_transcripts %}{% endif %}{% endfor %}{% set total_transcripts = ns.total %}
-            <div class="text-3xl font-bold text-white">{{ total_transcripts }}</div>
-            <div class="text-sm text-gray-400 mt-1">Total Transcripts</div>
+            <div class="text-3xl font-bold text-white">{{ campaigns|length }}</div>
+            <div class="text-sm text-gray-400 mt-1">Campaigns</div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div class="text-3xl font-bold text-white">{{ reports|length }}</div>
+            <div class="text-sm text-gray-400 mt-1">Compliance Reports</div>
         </div>
     </div>
 

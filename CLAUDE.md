@@ -10,7 +10,9 @@ Vigil is an open-source LLM red-teaming and human oversight testing framework. I
 vigil run config.yaml   →  4-stage pipeline via CLI
 vigil serve             →  FastAPI web UI on localhost
 vigil sweep             →  Multi-behavior batch evaluation
-vigil oversight         →  Human reviewer testing
+vigil oversight         →  Human reviewer testing (or --from-run for closed-loop)
+vigil campaign          →  Group sessions, track reviewer trends
+vigil report            →  EU AI Act compliance evidence reports
 ```
 
 ### Core Pipeline (src/vigil/pipeline/)
@@ -30,11 +32,23 @@ vigil oversight         →  Human reviewer testing
 - `generator.py` — Creates LLM outputs, plants subtle issues (5 types) in a configurable fraction
 - `reviewer.py` — Tracks human decisions via web UI
 - `scoring.py` — Computes detection rate, precision, vigilance score
+- `closed_loop.py` — Creates oversight sessions from red-team transcripts (closed-loop testing)
+- `campaigns.py` — Campaign management, reviewer trend tracking, fatigue detection
+
+### Compliance Evidence (src/vigil/compliance/)
+- `evidence.py` — Maps red-team findings + oversight results to EU AI Act articles
+- `report.py` — Generates compliance reports (HTML + JSON)
+
+### Production Probes (Level 3 oversight preparation)
+- `oversight/probes.py` — Probe pool management: create from sessions, draw probes, record decisions, score
+- Probe pools are pre-built from closed-loop sessions (knowledge from red-team + judgment stages)
+- Production systems draw probes via API, inject into real human workflows, report decisions back
+- API: POST /api/probes/pools, POST /api/probes/pools/{id}/next, POST /api/probes/{id}/decision
 
 ### Web UI (src/vigil/web/)
 - FastAPI + Jinja2 + Tailwind CSS (CDN, no build step)
 - Templates in `src/vigil/templates/`
-- Routes: dashboard, red-team viewer, human review interface, JSON API
+- Routes: dashboard, red-team viewer, human review, campaigns, compliance, JSON API
 
 ## Project Structure
 
@@ -54,6 +68,14 @@ src/vigil/
 │   └── reporting.py    # Stage 4: HTML report
 ├── prompts/            # All LLM prompt templates
 ├── oversight/          # Human review testing module
+│   ├── generator.py    # LLM output generation + issue planting
+│   ├── reviewer.py     # Decision tracking
+│   ├── scoring.py      # Vigilance metrics
+│   ├── closed_loop.py  # Create sessions from red-team transcripts
+│   └── campaigns.py    # Campaign management + trends
+├── compliance/         # EU AI Act compliance evidence
+│   ├── evidence.py     # Evidence collection + status assessment
+│   └── report.py       # Report generation (HTML + JSON)
 ├── web/                # FastAPI app + routes
 ├── templates/          # Jinja2 HTML templates
 ├── static/             # CSS + JS
@@ -113,10 +135,43 @@ Use direct OpenRouter format: `vendor/model-name`. Examples:
 
 The client auto-strips `openrouter/` prefix if present.
 
+## CLI Commands
+
+```
+vigil run <config.yaml>                   # Single red-team evaluation
+vigil sweep <behaviors...> --target <m>   # Multi-behavior batch
+vigil oversight                           # Generate human review session
+vigil oversight --from-run <id>           # Closed-loop from red-team results
+vigil campaign create --name "..."        # Create oversight campaign
+vigil campaign add-session <cid> <sid>    # Add session to campaign
+vigil campaign list                       # List campaigns
+vigil campaign show <id>                  # Show campaign trends + fatigue
+vigil report --campaign <id>              # EU AI Act compliance report
+vigil report --run <id> --session <id>    # Report from specific data
+vigil probes create <session_id>          # Create probe pool from session
+vigil probes list                         # List probe pools
+vigil probes show <pool_id>               # Pool stats + scoring
+vigil serve                               # Web UI
+vigil list                                # List runs
+vigil behaviors                           # List behaviors
+vigil init                                # Create workspace
+```
+
+## Storage Layout
+
+```
+~/.vigil/
+├── runs/{run_id}/                    # Red-team results
+├── oversight/{session_id}/           # Oversight sessions
+├── campaigns/{campaign_id}/          # Campaign groupings
+├── compliance/{report_id}/           # Compliance reports
+└── probes/{pool_id}/                 # Probe pools for production injection
+```
+
 ## Conventions
 
 - All data models in `models.py`, nowhere else
 - Prompts in `prompts/` module, not inline in pipeline stages
 - Storage is always JSON files, accessed via `storage.py`
-- Web routes are thin — business logic lives in pipeline/ and oversight/
+- Web routes are thin — business logic lives in pipeline/, oversight/, and compliance/
 - Config YAML maps 1:1 to `RunConfig` Pydantic model

@@ -1,16 +1,18 @@
 """Tests for Pydantic models."""
 
 from vigil.models import (
-    Behavior,
+    ArticleEvidence,
+    Campaign,
+    ComplianceReport,
     Judgment,
     JudgmentScore,
     OversightSession,
     ReviewDecision,
     ReviewerScore,
+    ReviewerTrend,
     ReviewItem,
     RunConfig,
     RunResult,
-    RunSummary,
     Scenario,
     Transcript,
 )
@@ -144,3 +146,110 @@ class TestOversight:
         d = ReviewDecision(item_id="i1", reviewer_id="r1", flagged=True, reason="looks wrong")
         assert d.flagged
         assert d.response_time_seconds == 0.0
+
+    def test_oversight_session_closed_loop(self):
+        session = OversightSession(
+            topic="test",
+            model="test/model",
+            source_run_id="run-abc",
+            source_type="closed_loop",
+        )
+        assert session.source_run_id == "run-abc"
+        assert session.source_type == "closed_loop"
+
+    def test_oversight_session_defaults_to_generated(self):
+        session = OversightSession(topic="test", model="test/model")
+        assert session.source_run_id is None
+        assert session.source_type == "generated"
+
+    def test_review_item_source_transcript(self):
+        item = ReviewItem(content="test", source_transcript_id="tr-123")
+        assert item.source_transcript_id == "tr-123"
+
+
+class TestCampaign:
+    def test_creation(self):
+        c = Campaign(name="Test Campaign")
+        assert c.campaign_id
+        assert c.name == "Test Campaign"
+        assert c.session_ids == []
+        assert c.reviewer_ids == []
+
+    def test_with_sessions(self):
+        c = Campaign(
+            name="Test",
+            session_ids=["s1", "s2"],
+            reviewer_ids=["r1"],
+        )
+        assert len(c.session_ids) == 2
+
+    def test_serialization_roundtrip(self):
+        c = Campaign(name="Test", description="A campaign", session_ids=["s1"])
+        data = c.model_dump(mode="json")
+        restored = Campaign.model_validate(data)
+        assert restored.name == "Test"
+        assert restored.session_ids == ["s1"]
+
+
+class TestArticleEvidence:
+    def test_creation(self):
+        a = ArticleEvidence(
+            article="Article 14 - Human oversight",
+            summary="Requires effective oversight",
+            risk_level="high-risk",
+            status="addressed",
+            avg_behavior_score=3.2,
+            avg_detection_rate=0.85,
+        )
+        assert a.status == "addressed"
+        assert a.avg_behavior_score == 3.2
+
+    def test_defaults(self):
+        a = ArticleEvidence(article="Article 15")
+        assert a.status == "not_assessed"
+        assert a.red_team_findings == []
+        assert a.oversight_sessions == []
+
+
+class TestComplianceReport:
+    def test_creation(self):
+        r = ComplianceReport(
+            organization="ACME Corp",
+            run_ids=["r1"],
+            session_ids=["s1"],
+            articles=[
+                ArticleEvidence(article="Article 14", status="addressed"),
+            ],
+            overall_status="partially_addressed",
+        )
+        assert r.report_id
+        assert r.organization == "ACME Corp"
+        assert len(r.articles) == 1
+        assert r.overall_status == "partially_addressed"
+
+    def test_serialization_roundtrip(self):
+        r = ComplianceReport(
+            organization="Test",
+            articles=[
+                ArticleEvidence(article="Article 14", status="addressed"),
+                ArticleEvidence(article="Article 15", status="not_addressed"),
+            ],
+        )
+        data = r.model_dump(mode="json")
+        restored = ComplianceReport.model_validate(data)
+        assert len(restored.articles) == 2
+        assert restored.articles[0].status == "addressed"
+
+
+class TestReviewerTrend:
+    def test_creation(self):
+        from datetime import datetime, timezone
+        t = ReviewerTrend(
+            session_id="s1",
+            session_created_at=datetime.now(timezone.utc),
+            vigilance_score=0.75,
+            detection_rate=0.9,
+            items_reviewed=10,
+        )
+        assert t.vigilance_score == 0.75
+        assert t.items_reviewed == 10

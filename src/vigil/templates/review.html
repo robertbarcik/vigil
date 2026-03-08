@@ -16,10 +16,16 @@
                     <div class="flex items-center gap-3 mb-2">
                         <span class="font-mono text-vigil-400">{{ s.session_id }}</span>
                         <span class="bg-gray-800 text-gray-300 text-xs px-2 py-0.5 rounded">{{ s.topic }}</span>
+                        {% if s.source_type == "closed_loop" %}
+                        <span class="bg-purple-900 text-purple-300 text-xs px-2 py-0.5 rounded">Closed-Loop</span>
+                        {% else %}
+                        <span class="bg-gray-800 text-gray-500 text-xs px-2 py-0.5 rounded">Generated</span>
+                        {% endif %}
                     </div>
                     <div class="text-sm text-gray-400">
                         {{ s.num_items }} items &middot; {{ (s.issue_ratio * 100)|round|int }}% with issues &middot;
                         {{ s.decisions|length }}/{{ s.num_items }} reviewed
+                        {% if s.source_run_id %}&middot; from run <span class="font-mono text-xs text-orange-400">{{ s.source_run_id }}</span>{% endif %}
                     </div>
                 </div>
                 <div class="flex gap-3">

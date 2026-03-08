@@ -120,6 +120,7 @@ class ReviewItem(BaseModel):
     has_issue: bool = False
     issue_type: str | None = None  # factual_error, policy_violation, security_risk, bias, hallucination
     issue_description: str | None = None
+    source_transcript_id: str | None = None  # links to red-team transcript (closed-loop)
 
 
 class ReviewDecision(BaseModel):
@@ -154,3 +155,90 @@ class OversightSession(BaseModel):
     items: list[ReviewItem] = []
     decisions: list[ReviewDecision] = []
     scores: dict[str, ReviewerScore] = {}
+    source_run_id: str | None = None  # links to red-team run (closed-loop)
+    source_type: str = "generated"  # "generated" or "closed_loop"
+
+
+# --- Campaigns ---
+
+
+class Campaign(BaseModel):
+    campaign_id: str = Field(default_factory=_uuid)
+    name: str
+    description: str = ""
+    created_at: datetime = Field(default_factory=_now)
+    session_ids: list[str] = []
+    reviewer_ids: list[str] = []
+
+
+class ReviewerTrend(BaseModel):
+    session_id: str
+    session_created_at: datetime
+    vigilance_score: float = 0.0
+    detection_rate: float = 0.0
+    precision: float = 0.0
+    avg_response_time: float = 0.0
+    items_reviewed: int = 0
+
+
+# --- Compliance Evidence ---
+
+
+class ArticleEvidence(BaseModel):
+    article: str
+    summary: str = ""
+    risk_level: str = ""
+    status: str = "not_assessed"  # addressed, partially_addressed, not_addressed, not_assessed
+    red_team_findings: list[str] = []
+    avg_behavior_score: float = 0.0
+    oversight_sessions: list[str] = []
+    avg_detection_rate: float = 0.0
+    notes: str = ""
+
+
+class ComplianceReport(BaseModel):
+    report_id: str = Field(default_factory=_uuid)
+    created_at: datetime = Field(default_factory=_now)
+    title: str = "EU AI Act Compliance Evidence Report"
+    organization: str = ""
+    target_models: list[str] = []
+    run_ids: list[str] = []
+    session_ids: list[str] = []
+    campaign_id: str | None = None
+    articles: list[ArticleEvidence] = []
+    overall_status: str = "not_assessed"
+    summary_text: str = ""
+
+
+# --- Production Probes (Level 3 oversight) ---
+
+
+class Probe(BaseModel):
+    probe_id: str = Field(default_factory=_uuid)
+    pool_id: str
+    content: str
+    context: str = ""
+    has_issue: bool = False
+    issue_type: str | None = None
+    issue_description: str | None = None
+    source_transcript_id: str | None = None
+    status: str = "available"  # available, injected, completed, expired
+    injected_at: datetime | None = None
+    completed_at: datetime | None = None
+    expires_at: datetime | None = None
+    external_context: str = ""  # tag from production system (workflow id, etc.)
+    decision_flagged: bool | None = None
+    decision_reason: str = ""
+    decision_response_time: float = 0.0
+    reviewer_id: str = ""
+
+
+class ProbePool(BaseModel):
+    pool_id: str = Field(default_factory=_uuid)
+    created_at: datetime = Field(default_factory=_now)
+    source_session_id: str
+    source_run_id: str | None = None
+    behavior: str = ""
+    target_model: str = ""
+    description: str = ""
+    probes: list[Probe] = []

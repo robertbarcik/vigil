@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% set active = "campaigns" %}
+
+{% block title %}Vigil — Campaign: {{ campaign.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl">
+    <div class="mb-6">
+        <a href="/campaigns/" class="text-sm text-gray-400 hover:text-gray-300">&larr; All Campaigns</a>
+    </div>
+
+    <h1 class="text-2xl font-bold mb-2">{{ campaign.name }}</h1>
+    {% if campaign.description %}
+    <p class="text-gray-400 mb-6">{{ campaign.description }}</p>
+    {% endif %}
+
+    <!-- Campaign stats -->
+    <div class="grid grid-cols-3 gap-6 mb-8">
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div class="text-3xl font-bold text-white">{{ sessions|length }}</div>
+            <div class="text-sm text-gray-400 mt-1">Sessions</div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div class="text-3xl font-bold text-white">{{ campaign.reviewer_ids|length }}</div>
+            <div class="text-sm text-gray-400 mt-1">Reviewers</div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            {% set ns = namespace(total=0) %}{% for s in sessions %}{% set ns.total = ns.total + s.decisions|length %}{% endfor %}
+            <div class="text-3xl font-bold text-white">{{ ns.total }}</div>
+            <div class="text-sm text-gray-400 mt-1">Total Decisions</div>
+        </div>
+    </div>
+
+    <!-- Sessions -->
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold mb-4">Sessions</h2>
+        {% if sessions %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-800 text-gray-400">
+                        <th class="text-left px-4 py-3">Session ID</th>
+                        <th class="text-left px-4 py-3">Topic</th>
+                        <th class="text-left px-4 py-3">Type</th>
+                        <th class="text-right px-4 py-3">Items</th>
+                        <th class="text-right px-4 py-3">Reviewed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sessions %}
+                    <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                        <td class="px-4 py-3">
+                            <a href="/oversight/review/{{ s.session_id }}" class="text-vigil-400 hover:underline font-mono">{{ s.session_id }}</a>
+                        </td>
+                        <td class="px-4 py-3">{{ s.topic }}</td>
+                        <td class="px-4 py-3">
+                            {% if s.source_type == "closed_loop" %}
+                            <span class="bg-purple-900 text-purple-300 text-xs px-2 py-0.5 rounded">Closed-Loop</span>
+                            {% else %}
+                            <span class="bg-gray-800 text-gray-500 text-xs px-2 py-0.5 rounded">Generated</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">{{ s.num_items }}</td>
+                        <td class="px-4 py-3 text-right">{{ s.decisions|length }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-10 text-center text-gray-500">
+            No sessions added yet. Use: <code class="text-vigil-400">vigil campaign add-session {{ campaign.campaign_id }} &lt;session_id&gt;</code>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Reviewer Trends -->
+    {% if reviewer_trends %}
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold mb-4">Reviewer Trends</h2>
+        {% for reviewer_id, trends in reviewer_trends.items() %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-mono text-vigil-400">{{ reviewer_id }}</h3>
+                {% if reviewer_fatigue[reviewer_id].fatigued %}
+                <span class="bg-red-900 text-red-300 text-xs px-3 py-1 rounded-full">
+                    Fatigue Warning
+                </span>
+                {% endif %}
+            </div>
+
+            {% if reviewer_fatigue[reviewer_id].fatigued %}
+            <div class="bg-red-950 border border-red-900 rounded p-3 mb-4 text-sm text-red-300">
+                {{ reviewer_fatigue[reviewer_id].reason }}
+            </div>
+            {% endif %}
+
+            {% if trends %}
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-800 text-gray-400">
+                        <th class="text-left px-3 py-2">Session</th>
+                        <th class="text-right px-3 py-2">Vigilance</th>
+                        <th class="text-right px-3 py-2">Detection</th>
+                        <th class="text-right px-3 py-2">Precision</th>
+                        <th class="text-right px-3 py-2">Avg Time</th>
+                        <th class="text-right px-3 py-2">Items</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in trends %}
+                    <tr class="border-b border-gray-800/50">
+                        <td class="px-3 py-2 font-mono text-xs">{{ t.session_id }}</td>
+                        <td class="px-3 py-2 text-right">
+                            <span class="{% if t.vigilance_score > 0.7 %}text-green-400{% elif t.vigilance_score > 0.4 %}text-yellow-400{% else %}text-red-400{% endif %}">
+                                {{ (t.vigilance_score * 100)|round|int }}%
+                            </span>
+                        </td>
+                        <td class="px-3 py-2 text-right">{{ (t.detection_rate * 100)|round|int }}%</td>
+                        <td class="px-3 py-2 text-right">{{ (t.precision * 100)|round|int }}%</td>
+                        <td class="px-3 py-2 text-right">{{ t.avg_response_time|round(1) }}s</td>
+                        <td class="px-3 py-2 text-right">{{ t.items_reviewed }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-sm text-gray-500">No data available for this reviewer.</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

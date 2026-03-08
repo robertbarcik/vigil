@@ -6,11 +6,11 @@ import pytest
 
 from vigil.models import (
     Behavior,
+    Campaign,
     Judgment,
     JudgmentScore,
     Message,
     OversightSession,
-    ReviewDecision,
     ReviewItem,
     RunConfig,
     RunResult,
@@ -26,6 +26,14 @@ def vigil_temp_dir(tmp_path):
     os.environ["VIGIL_DATA_DIR"] = str(tmp_path / ".vigil")
     yield tmp_path / ".vigil"
     os.environ.pop("VIGIL_DATA_DIR", None)
+
+
+@pytest.fixture
+def client():
+    """FastAPI test client."""
+    from fastapi.testclient import TestClient
+    from vigil.web.app import create_app
+    return TestClient(create_app())
 
 
 @pytest.fixture
@@ -116,6 +124,78 @@ def sample_run_result(sample_config, sample_scenario, sample_transcript, sample_
             elicitation_rate=0.0,
             eu_ai_act_articles=["Article 15 - Accuracy, robustness and cybersecurity"],
         ),
+    )
+
+
+@pytest.fixture
+def sample_high_score_run_result():
+    """Run result with mixed scores (2-9) across multiple scenarios for closed-loop testing."""
+    config = RunConfig(
+        run_id="high-001",
+        behavior="prompt-injection",
+        target_model="test/target",
+        attacker_model="test/attacker",
+        judge_model="test/judge",
+        num_scenarios=5,
+    )
+    scenarios = []
+    transcripts = []
+    judgments = []
+    scores = [2, 4, 7, 8, 9]
+    for i, score in enumerate(scores):
+        sc_id = f"sc-h{i}"
+        tr_id = f"tr-h{i}"
+        scenarios.append(Scenario(
+            scenario_id=sc_id,
+            behavior="prompt-injection",
+            title=f"Scenario {i}",
+            description=f"Test scenario {i}",
+            attack_strategy="Direct injection",
+            target_system_prompt="You are a helpful assistant.",
+        ))
+        transcripts.append(Transcript(
+            transcript_id=tr_id,
+            scenario_id=sc_id,
+            messages=[
+                Message(role="attacker", content=f"Attack attempt {i}", model="test/attacker"),
+                Message(role="target", content=f"Response {i}", model="test/target"),
+            ],
+        ))
+        judgments.append(Judgment(
+            judgment_id=f"jd-h{i}",
+            transcript_id=tr_id,
+            scenario_id=sc_id,
+            scores=JudgmentScore(
+                behavior_presence=score,
+                summary=f"Score {score} scenario",
+                justification=f"The target {'was compromised' if score > 5 else 'resisted'}.",
+            ),
+            judge_model="test/judge",
+        ))
+    return RunResult(
+        run_id=config.run_id,
+        config=config,
+        scenarios=scenarios,
+        transcripts=transcripts,
+        judgments=judgments,
+        summary=RunSummary(
+            avg_behavior_presence=6.0,
+            min_score=2,
+            max_score=9,
+            total_scenarios=5,
+            total_transcripts=5,
+            elicitation_rate=0.6,
+            eu_ai_act_articles=["Article 15 - Accuracy, robustness and cybersecurity"],
+        ),
+    )
+
+
+@pytest.fixture
+def sample_campaign():
+    return Campaign(
+        campaign_id="camp-001",
+        name="Q1 2026 Review Team",
+        description="Quarterly oversight review",
     )
 
 

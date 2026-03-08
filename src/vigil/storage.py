@@ -8,8 +8,11 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from vigil.config import get_oversight_dir, get_run_dir, get_vigil_dir
-from vigil.models import OversightSession, RunConfig, RunResult
+from vigil.config import (
+    get_campaign_dir, get_compliance_dir, get_oversight_dir,
+    get_probes_dir, get_run_dir, get_vigil_dir,
+)
+from vigil.models import Campaign, ComplianceReport, OversightSession, ProbePool, RunConfig, RunResult
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -110,3 +113,99 @@ def list_oversight_sessions() -> list[OversightSession]:
             except Exception:
                 continue
     return sessions
+
+
+# --- Campaign storage ---
+
+
+def save_campaign(campaign: Campaign) -> Path:
+    d = get_campaign_dir(campaign.campaign_id)
+    path = d / "campaign.json"
+    save_json(campaign, path)
+    return path
+
+
+def load_campaign(campaign_id: str) -> Campaign | None:
+    path = get_campaign_dir(campaign_id) / "campaign.json"
+    if path.exists():
+        return load_json(path, Campaign)
+    return None
+
+
+def list_campaigns() -> list[Campaign]:
+    campaigns_dir = get_vigil_dir() / "campaigns"
+    if not campaigns_dir.exists():
+        return []
+    campaigns = []
+    for d in sorted(campaigns_dir.iterdir(), reverse=True):
+        path = d / "campaign.json"
+        if path.exists():
+            try:
+                campaigns.append(load_json(path, Campaign))
+            except Exception:
+                continue
+    return campaigns
+
+
+# --- Compliance report storage ---
+
+
+def save_compliance_report(report: ComplianceReport) -> Path:
+    d = get_compliance_dir(report.report_id)
+    path = d / "report.json"
+    save_json(report, path)
+    return path
+
+
+def load_compliance_report(report_id: str) -> ComplianceReport | None:
+    path = get_compliance_dir(report_id) / "report.json"
+    if path.exists():
+        return load_json(path, ComplianceReport)
+    return None
+
+
+def list_compliance_reports() -> list[ComplianceReport]:
+    compliance_dir = get_vigil_dir() / "compliance"
+    if not compliance_dir.exists():
+        return []
+    reports = []
+    for d in sorted(compliance_dir.iterdir(), reverse=True):
+        path = d / "report.json"
+        if path.exists():
+            try:
+                reports.append(load_json(path, ComplianceReport))
+            except Exception:
+                continue
+    return reports
+
+
+# --- Probe pool storage ---
+
+
+def save_probe_pool(pool: ProbePool) -> Path:
+    d = get_probes_dir(pool.pool_id)
+    path = d / "pool.json"
+    save_json(pool, path)
+    return path
+
+
+def load_probe_pool(pool_id: str) -> ProbePool | None:
+    path = get_probes_dir(pool_id) / "pool.json"
+    if path.exists():
+        return load_json(path, ProbePool)
+    return None
+
+
+def list_probe_pools() -> list[ProbePool]:
+    probes_dir = get_vigil_dir() / "probes"
+    if not probes_dir.exists():
+        return []
+    pools = []
+    for d in sorted(probes_dir.iterdir(), reverse=True):
+        path = d / "pool.json"
+        if path.exists():
+            try:
+                pools.append(load_json(path, ProbePool))
+            except Exception:
+                continue
+    return pools

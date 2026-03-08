@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
 from vigil.web.app import get_templates
-from vigil.storage import get_run, list_runs, list_oversight_sessions
+from vigil.storage import get_run, list_campaigns, list_compliance_reports, list_runs, list_oversight_sessions
 
 router = APIRouter()
 
@@ -25,9 +25,13 @@ async def dashboard(request: Request):
         })
 
     sessions = list_oversight_sessions()
+    campaigns = list_campaigns()
+    reports = list_compliance_reports()
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "runs": run_data,
         "sessions": sessions[:10],
+        "campaigns": campaigns,
+        "reports": reports,
     })

@@ -30,6 +30,24 @@ def get_oversight_dir(session_id: str) -> Path:
     return d
 
 
+def get_campaign_dir(campaign_id: str) -> Path:
+    d = get_vigil_dir() / "campaigns" / campaign_id
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def get_compliance_dir(report_id: str) -> Path:
+    d = get_vigil_dir() / "compliance" / report_id
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def get_probes_dir(pool_id: str) -> Path:
+    d = get_vigil_dir() / "probes" / pool_id
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 def get_api_key() -> str:
     """Load OpenRouter API key from environment or .env file."""
     load_dotenv()

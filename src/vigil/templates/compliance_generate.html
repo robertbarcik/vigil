@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% set active = "compliance" %}
+
+{% block title %}Vigil — Generate Compliance Report{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    <div class="mb-6">
+        <a href="/compliance/" class="text-sm text-gray-400 hover:text-gray-300">&larr; All Reports</a>
+    </div>
+
+    <h1 class="text-2xl font-bold mb-6">Generate Compliance Report</h1>
+
+    <form method="POST" action="/compliance/generate" class="space-y-8">
+        <!-- Organization -->
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Organization</label>
+            <input type="text" name="organization" placeholder="e.g., ACME Corp"
+                   class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-vigil-400 focus:outline-none">
+        </div>
+
+        <!-- Campaign selection -->
+        {% if campaigns %}
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">From Campaign (optional)</label>
+            <select name="campaign_id"
+                    class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-vigil-400 focus:outline-none">
+                <option value="">— Select a campaign —</option>
+                {% for c in campaigns %}
+                <option value="{{ c.campaign_id }}">{{ c.name }} ({{ c.session_ids|length }} sessions)</option>
+                {% endfor %}
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Selecting a campaign will include all its sessions and linked runs.</p>
+        </div>
+        {% endif %}
+
+        <!-- Run selection -->
+        {% if runs %}
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Red-Team Runs</label>
+            <div class="space-y-2 max-h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-lg p-4">
+                {% for r in runs %}
+                <label class="flex items-center gap-3 text-sm">
+                    <input type="checkbox" name="run_ids" value="{{ r.run_id }}"
+                           class="rounded bg-gray-800 border-gray-600">
+                    <span class="font-mono text-vigil-400">{{ r.run_id }}</span>
+                    <span class="text-gray-400">{{ r.behavior }}</span>
+                    <span class="text-xs text-orange-400 font-mono">{{ r.target_model }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Session selection -->
+        {% if sessions %}
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Oversight Sessions</label>
+            <div class="space-y-2 max-h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-lg p-4">
+                {% for s in sessions %}
+                <label class="flex items-center gap-3 text-sm">
+                    <input type="checkbox" name="session_ids" value="{{ s.session_id }}"
+                           class="rounded bg-gray-800 border-gray-600">
+                    <span class="font-mono text-vigil-400">{{ s.session_id }}</span>
+                    <span class="text-gray-400">{{ s.topic }}</span>
+                    {% if s.source_type == "closed_loop" %}
+                    <span class="bg-purple-900 text-purple-300 text-xs px-2 py-0.5 rounded">CL</span>
+                    {% endif %}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <button type="submit"
+                class="bg-vigil-600 hover:bg-vigil-700 text-white font-medium px-6 py-3 rounded-lg transition-colors">
+            Generate Report
+        </button>
+    </form>
+</div>
+{% endblock %}

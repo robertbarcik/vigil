@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% set active = "campaigns" %}
+
+{% block title %}Vigil — Campaigns{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">Oversight Campaigns</h1>
+    </div>
+
+    {% if campaigns %}
+    <div class="space-y-4">
+        {% for c in campaigns %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <a href="/campaigns/{{ c.campaign.campaign_id }}" class="text-vigil-400 hover:underline font-semibold text-lg">
+                            {{ c.campaign.name }}
+                        </a>
+                        <span class="font-mono text-xs text-gray-500">{{ c.campaign.campaign_id }}</span>
+                    </div>
+                    {% if c.campaign.description %}
+                    <div class="text-sm text-gray-400 mb-2">{{ c.campaign.description }}</div>
+                    {% endif %}
+                    <div class="text-sm text-gray-500">
+                        {{ c.session_count }} session{{ 's' if c.session_count != 1 }} &middot;
+                        {{ c.reviewer_count }} reviewer{{ 's' if c.reviewer_count != 1 }}
+                    </div>
+                </div>
+                <a href="/campaigns/{{ c.campaign.campaign_id }}"
+                   class="border border-gray-700 hover:border-gray-600 text-sm px-4 py-2 rounded-lg transition-colors">
+                    View Details
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-gray-900 border border-gray-800 rounded-lg p-16 text-center">
+        <div class="text-gray-500 mb-4">No campaigns yet</div>
+        <code class="text-vigil-400">vigil campaign create --name "Q1 2026 Review"</code>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
