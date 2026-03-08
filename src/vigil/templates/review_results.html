@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% set active = "oversight" %}
+
+{% block title %}Vigil — Review Results{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl">
+    <div class="flex items-center gap-3 mb-6">
+        <a href="/oversight/sessions" class="text-gray-400 hover:text-gray-200">&larr; Sessions</a>
+        <span class="text-gray-600">/</span>
+        <h1 class="text-2xl font-bold">Review Results</h1>
+    </div>
+
+    <!-- Reviewer scores -->
+    {% for reviewer_id, score in scores.items() %}
+    <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+            Reviewer: {{ reviewer_id }}
+        </h2>
+
+        <div class="grid grid-cols-5 gap-6 text-center mb-6">
+            <div>
+                <div class="text-3xl font-bold {% if score.vigilance_score > 0.7 %}text-green-400{% elif score.vigilance_score > 0.4 %}text-yellow-400{% else %}text-red-400{% endif %}">
+                    {{ (score.vigilance_score * 100)|round|int }}%
+                </div>
+                <div class="text-xs text-gray-500 mt-1">Vigilance Score</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold {% if score.detection_rate > 0.7 %}text-green-400{% elif score.detection_rate > 0.4 %}text-yellow-400{% else %}text-red-400{% endif %}">
+                    {{ (score.detection_rate * 100)|round|int }}%
+                </div>
+                <div class="text-xs text-gray-500 mt-1">Detection Rate</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-300">{{ (score.precision * 100)|round|int }}%</div>
+                <div class="text-xs text-gray-500 mt-1">Precision</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-300">{{ score.avg_response_time }}s</div>
+                <div class="text-xs text-gray-500 mt-1">Avg Response Time</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-gray-300">{{ score.total_items }}</div>
+                <div class="text-xs text-gray-500 mt-1">Items Reviewed</div>
+            </div>
+        </div>
+
+        <!-- Confusion matrix -->
+        <div class="grid grid-cols-2 gap-3 max-w-xs mx-auto text-center text-sm">
+            <div class="bg-green-950/40 border border-green-900/50 rounded p-3">
+                <div class="font-bold text-green-400">{{ score.true_positives }}</div>
+                <div class="text-xs text-gray-500">True Positives</div>
+            </div>
+            <div class="bg-red-950/40 border border-red-900/50 rounded p-3">
+                <div class="font-bold text-red-400">{{ score.false_positives }}</div>
+                <div class="text-xs text-gray-500">False Positives</div>
+            </div>
+            <div class="bg-red-950/40 border border-red-900/50 rounded p-3">
+                <div class="font-bold text-red-400">{{ score.false_negatives }}</div>
+                <div class="text-xs text-gray-500">False Negatives</div>
+            </div>
+            <div class="bg-green-950/40 border border-green-900/50 rounded p-3">
+                <div class="font-bold text-green-400">{{ score.true_negatives }}</div>
+                <div class="text-xs text-gray-500">True Negatives</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Decision detail -->
+    <h2 class="text-lg font-semibold mb-4">Decision Breakdown</h2>
+    <div class="space-y-3">
+        {% for d in decisions_detail %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-4 flex items-center gap-4">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold {% if d.correct %}bg-green-950 text-green-400 border border-green-800{% else %}bg-red-950 text-red-400 border border-red-800{% endif %}">
+                {% if d.correct %}&#10003;{% else %}&#10007;{% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm truncate">{{ d.item.content[:120] }}...</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {% if d.item.has_issue %}
+                    <span class="text-yellow-400">Had issue: {{ d.item.issue_type }}</span>
+                    {% else %}
+                    <span class="text-gray-500">Clean (no issue)</span>
+                    {% endif %}
+                    &middot;
+                    Reviewer: {{ "flagged" if d.decision.flagged else "approved" }}
+                    {% if d.decision.reason %}&middot; "{{ d.decision.reason }}"{% endif %}
+                    &middot; {{ d.decision.response_time_seconds|round(1) }}s
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

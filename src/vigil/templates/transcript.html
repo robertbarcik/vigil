@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% set active = "redteam" %}
+
+{% block title %}Vigil — Transcript{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    <div class="flex items-center gap-3 mb-6">
+        <a href="/redteam/runs/{{ result.run_id }}" class="text-gray-400 hover:text-gray-200">&larr; Run {{ result.run_id }}</a>
+        <span class="text-gray-600">/</span>
+        <h1 class="text-2xl font-bold">Transcript</h1>
+    </div>
+
+    {% if scenario %}
+    <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
+        <h2 class="font-medium text-white mb-2">{{ scenario.title }}</h2>
+        <p class="text-sm text-gray-400">{{ scenario.description }}</p>
+    </div>
+    {% endif %}
+
+    {% if judgment %}
+    <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Judgment</h2>
+            <span class="text-2xl font-bold {% if judgment.scores.behavior_presence > 6 %}text-red-400{% elif judgment.scores.behavior_presence > 3 %}text-yellow-400{% else %}text-green-400{% endif %}">
+                {{ judgment.scores.behavior_presence }}/10
+            </span>
+        </div>
+        {% if judgment.scores.summary %}
+        <p class="text-sm text-gray-300">{{ judgment.scores.summary }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Messages -->
+    <div class="space-y-4">
+        {% for msg in transcript.messages %}
+        <div class="rounded-lg p-5 {% if msg.role == 'attacker' %}bg-red-950/50 border border-red-900/50{% else %}bg-blue-950/50 border border-blue-900/50{% endif %}">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider {% if msg.role == 'attacker' %}text-red-400{% else %}text-blue-400{% endif %}">
+                    {{ msg.role }}
+                </span>
+                <span class="text-xs text-gray-600">{{ msg.model }}</span>
+            </div>
+            <div class="text-sm whitespace-pre-wrap leading-relaxed">{{ msg.content }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

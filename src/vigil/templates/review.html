@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% set active = "oversight" %}
+
+{% block title %}Vigil — Human Oversight Sessions{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl">
+    <h1 class="text-2xl font-bold mb-6">Human Oversight Sessions</h1>
+
+    {% if sessions %}
+    <div class="space-y-4">
+        {% for s in sessions %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="font-mono text-vigil-400">{{ s.session_id }}</span>
+                        <span class="bg-gray-800 text-gray-300 text-xs px-2 py-0.5 rounded">{{ s.topic }}</span>
+                    </div>
+                    <div class="text-sm text-gray-400">
+                        {{ s.num_items }} items &middot; {{ (s.issue_ratio * 100)|round|int }}% with issues &middot;
+                        {{ s.decisions|length }}/{{ s.num_items }} reviewed
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <a href="/oversight/review/{{ s.session_id }}"
+                       class="bg-vigil-600 hover:bg-vigil-700 text-white text-sm px-4 py-2 rounded-lg transition-colors">
+                        {% if s.decisions|length < s.num_items %}Start Review{% else %}Continue{% endif %}
+                    </a>
+                    {% if s.decisions|length > 0 %}
+                    <a href="/oversight/results/{{ s.session_id }}"
+                       class="border border-gray-700 hover:border-gray-600 text-sm px-4 py-2 rounded-lg transition-colors">
+                        Results
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-gray-900 border border-gray-800 rounded-lg p-16 text-center">
+        <div class="text-gray-500 mb-4">No oversight sessions yet</div>
+        <code class="text-vigil-400">vigil oversight --topic "cybersecurity"</code>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

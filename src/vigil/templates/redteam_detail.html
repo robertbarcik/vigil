@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% set active = "redteam" %}
+
+{% block title %}Vigil — Run {{ result.run_id }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl">
+    <div class="flex items-center gap-3 mb-6">
+        <a href="/redteam/runs" class="text-gray-400 hover:text-gray-200">&larr; Runs</a>
+        <span class="text-gray-600">/</span>
+        <h1 class="text-2xl font-bold">Run {{ result.run_id }}</h1>
+    </div>
+
+    <!-- Config & Summary -->
+    <div class="grid grid-cols-2 gap-6 mb-8">
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Configuration</h2>
+            <div class="space-y-2 text-sm">
+                <div><span class="text-gray-400 w-24 inline-block">Behavior:</span> <span class="font-medium">{{ result.config.behavior }}</span></div>
+                <div><span class="text-gray-400 w-24 inline-block">Target:</span> <span class="font-mono text-orange-400">{{ result.config.target_model }}</span></div>
+                <div><span class="text-gray-400 w-24 inline-block">Attacker:</span> <span class="font-mono text-blue-400">{{ result.config.attacker_model }}</span></div>
+                <div><span class="text-gray-400 w-24 inline-block">Judge:</span> <span class="font-mono text-purple-400">{{ result.config.judge_model }}</span></div>
+                <div><span class="text-gray-400 w-24 inline-block">Turns:</span> {{ result.config.num_turns }}</div>
+            </div>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Results</h2>
+            <div class="grid grid-cols-2 gap-4 text-center">
+                <div>
+                    {% set score = result.summary.avg_behavior_presence %}
+                    <div class="text-4xl font-bold {% if score > 6 %}text-red-400{% elif score > 3 %}text-yellow-400{% else %}text-green-400{% endif %}">
+                        {{ score }}
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">Avg Score /10</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold {% if result.summary.elicitation_rate > 0.5 %}text-red-400{% elif result.summary.elicitation_rate > 0.2 %}text-yellow-400{% else %}text-green-400{% endif %}">
+                        {{ (result.summary.elicitation_rate * 100)|round|int }}%
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">Elicitation Rate</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-gray-300">{{ result.summary.min_score }}-{{ result.summary.max_score }}</div>
+                    <div class="text-xs text-gray-500 mt-1">Score Range</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-gray-300">{{ result.summary.total_transcripts }}</div>
+                    <div class="text-xs text-gray-500 mt-1">Conversations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EU AI Act -->
+    {% if result.summary.eu_ai_act_articles %}
+    <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">EU AI Act Relevance</h2>
+        <div class="flex flex-wrap gap-2">
+            {% for article in result.summary.eu_ai_act_articles %}
+            <span class="bg-blue-950 text-blue-300 text-xs px-3 py-1 rounded-full border border-blue-800">{{ article }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Scenarios & Judgments -->
+    <h2 class="text-lg font-semibold mb-4">Scenarios & Judgments</h2>
+    <div class="space-y-4 mb-8">
+        {% for scenario in result.scenarios %}
+        {% set judgment = judgment_by_scenario.get(scenario.scenario_id) %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <h3 class="font-medium text-white">{{ scenario.title or "Scenario " ~ loop.index }}</h3>
+                    <p class="text-sm text-gray-400 mt-1">{{ scenario.attack_strategy }}</p>
+                </div>
+                {% if judgment %}
+                <span class="text-2xl font-bold {% if judgment.scores.behavior_presence > 6 %}text-red-400{% elif judgment.scores.behavior_presence > 3 %}text-yellow-400{% else %}text-green-400{% endif %}">
+                    {{ judgment.scores.behavior_presence }}/10
+                </span>
+                {% endif %}
+            </div>
+
+            {% if judgment and judgment.scores.summary %}
+            <p class="text-sm text-gray-300 mb-3">{{ judgment.scores.summary }}</p>
+            {% endif %}
+
+            <div class="flex gap-3">
+                {% for transcript in result.transcripts %}
+                {% if transcript.scenario_id == scenario.scenario_id %}
+                <a href="/redteam/runs/{{ result.run_id }}/transcript/{{ transcript.transcript_id }}"
+                   class="text-sm text-vigil-400 hover:text-vigil-300 border border-gray-700 px-3 py-1 rounded hover:border-gray-600">
+                    View transcript ({{ transcript.messages|length }} msgs)
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            {% if judgment %}
+            <details class="mt-3">
+                <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300">Show justification</summary>
+                <p class="text-sm text-gray-400 mt-2 whitespace-pre-wrap">{{ judgment.scores.justification }}</p>
+            </details>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

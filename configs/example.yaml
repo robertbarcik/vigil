@@ -1,0 +1,14 @@
+# Vigil — Example Red-Team Configuration
+#
+# Run with: vigil run configs/example.yaml
+
+behavior: prompt-injection
+target_model: meta-llama/llama-3.3-70b-instruct
+attacker_model: anthropic/claude-sonnet-4
+judge_model: anthropic/claude-sonnet-4
+
+num_scenarios: 3
+num_turns: 8
+num_reps: 1
+temperature: 1.0
+max_tokens: 4096

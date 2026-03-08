@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+
+{% block title %}Vigil — Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl">
+    <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+
+    <!-- Quick stats -->
+    <div class="grid grid-cols-3 gap-6 mb-10">
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div class="text-3xl font-bold text-white">{{ runs|length }}</div>
+            <div class="text-sm text-gray-400 mt-1">Red-Team Runs</div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div class="text-3xl font-bold text-white">{{ sessions|length }}</div>
+            <div class="text-sm text-gray-400 mt-1">Oversight Sessions</div>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            {% set total_transcripts = runs|sum(attribute='result.summary.total_transcripts', default=0) if runs else 0 %}
+            <div class="text-3xl font-bold text-white">{{ total_transcripts }}</div>
+            <div class="text-sm text-gray-400 mt-1">Total Transcripts</div>
+        </div>
+    </div>
+
+    <!-- Recent runs -->
+    <section class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Recent Red-Team Runs</h2>
+            <a href="/redteam/runs" class="text-sm text-vigil-400 hover:text-vigil-300">View all &rarr;</a>
+        </div>
+
+        {% if runs %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-800 text-gray-400">
+                        <th class="text-left px-4 py-3">Run ID</th>
+                        <th class="text-left px-4 py-3">Behavior</th>
+                        <th class="text-left px-4 py-3">Target Model</th>
+                        <th class="text-right px-4 py-3">Avg Score</th>
+                        <th class="text-right px-4 py-3">Elicitation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in runs %}
+                    <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                        <td class="px-4 py-3">
+                            <a href="/redteam/runs/{{ run.config.run_id }}" class="text-vigil-400 hover:underline font-mono">
+                                {{ run.config.run_id }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-3">{{ run.config.behavior }}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-orange-400">{{ run.config.target_model }}</td>
+                        <td class="px-4 py-3 text-right">
+                            {% if run.result %}
+                                {% set score = run.result.summary.avg_behavior_presence %}
+                                <span class="font-bold {% if score > 6 %}text-red-400{% elif score > 3 %}text-yellow-400{% else %}text-green-400{% endif %}">
+                                    {{ score }}/10
+                                </span>
+                            {% else %}
+                                <span class="text-gray-500">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            {% if run.result %}
+                                {{ (run.result.summary.elicitation_rate * 100)|round|int }}%
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-10 text-center text-gray-500">
+            <p>No runs yet. Start one with:</p>
+            <code class="block mt-2 text-vigil-400">vigil run configs/example.yaml</code>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Recent oversight sessions -->
+    <section>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Recent Oversight Sessions</h2>
+            <a href="/oversight/sessions" class="text-sm text-vigil-400 hover:text-vigil-300">View all &rarr;</a>
+        </div>
+
+        {% if sessions %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-800 text-gray-400">
+                        <th class="text-left px-4 py-3">Session ID</th>
+                        <th class="text-left px-4 py-3">Topic</th>
+                        <th class="text-right px-4 py-3">Items</th>
+                        <th class="text-right px-4 py-3">Reviewed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sessions %}
+                    <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                        <td class="px-4 py-3">
+                            <a href="/oversight/review/{{ s.session_id }}" class="text-vigil-400 hover:underline font-mono">
+                                {{ s.session_id }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-3">{{ s.topic }}</td>
+                        <td class="px-4 py-3 text-right">{{ s.num_items }}</td>
+                        <td class="px-4 py-3 text-right">{{ s.decisions|length }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-10 text-center text-gray-500">
+            <p>No oversight sessions yet. Create one with:</p>
+            <code class="block mt-2 text-vigil-400">vigil oversight --topic "cybersecurity"</code>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

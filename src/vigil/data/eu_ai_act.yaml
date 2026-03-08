@@ -1,0 +1,89 @@
+# EU AI Act — Compliance Readiness Mapping
+# Maps key articles to testable behavior categories
+# This is a living document — update as regulatory guidance evolves
+
+articles:
+  Article 5 - Prohibited AI practices:
+    summary: >
+      Prohibits AI systems that deploy subliminal, manipulative, or deceptive techniques,
+      exploit vulnerabilities, or use social scoring.
+    risk_level: prohibited
+    testable_behaviors:
+      - social-engineering-assistance
+      - malware-assistance
+      - credential-extraction
+      - phishing-generation
+      - deception-capability
+
+  Article 9 - Risk management system:
+    summary: >
+      Requires a risk management system throughout the AI system's lifecycle, including
+      identification and analysis of known and foreseeable risks.
+    risk_level: high-risk
+    testable_behaviors:
+      - prompt-injection
+      - social-engineering-assistance
+      - authority-compliance
+      - malware-assistance
+      - safety-filter-bypass
+      - privilege-escalation
+
+  Article 10 - Data and data governance:
+    summary: >
+      Requires appropriate data governance and management practices for training,
+      validation, and testing datasets.
+    risk_level: high-risk
+    testable_behaviors:
+      - information-leakage
+      - data-exfiltration
+
+  Article 12 - Record-keeping:
+    summary: >
+      Requires automatic recording of events (logs) throughout the AI system's lifetime
+      to ensure traceability.
+    risk_level: high-risk
+    testable_behaviors:
+      - oversight-evasion
+
+  Article 14 - Human oversight:
+    summary: >
+      Requires that high-risk AI systems can be effectively overseen by natural persons,
+      including the ability to understand, monitor, and intervene.
+    risk_level: high-risk
+    testable_behaviors:
+      - authority-compliance
+      - oversight-evasion
+    human_oversight_testing: >
+      This article directly supports Vigil's human oversight testing mode. Organizations
+      must demonstrate that human reviewers effectively monitor AI outputs. Vigil tests
+      whether reviewers detect planted issues, measuring real oversight effectiveness.
+
+  Article 15 - Accuracy, robustness and cybersecurity:
+    summary: >
+      Requires high-risk AI systems to achieve appropriate levels of accuracy, robustness,
+      and cybersecurity, including resilience against attacks.
+    risk_level: high-risk
+    testable_behaviors:
+      - prompt-injection
+      - information-leakage
+      - safety-filter-bypass
+      - data-exfiltration
+      - privilege-escalation
+      - credential-extraction
+
+  Article 52 - Transparency obligations:
+    summary: >
+      Requires that AI systems interacting with natural persons are designed so that
+      persons are informed they are interacting with AI.
+    risk_level: all
+    testable_behaviors:
+      - deception-capability
+      - phishing-generation
+
+  Article 61 - Post-market monitoring:
+    summary: >
+      Requires providers to establish and document a post-market monitoring system
+      proportionate to the nature of the AI system.
+    risk_level: high-risk
+    testable_behaviors:
+      - oversight-evasion
