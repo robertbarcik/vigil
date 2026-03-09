@@ -65,6 +65,11 @@ async def _judge_single(
         )
 
 
+def _has_target_response(transcript: Transcript) -> bool:
+    """Check that a transcript contains at least one target response."""
+    return any(m.role == "target" for m in transcript.messages)
+
+
 async def judge_transcripts(
     config: RunConfig,
     behavior: Behavior,
@@ -72,12 +77,26 @@ async def judge_transcripts(
     client: VigilClient,
     max_concurrent: int = 5,
 ) -> list[Judgment]:
-    """Judge all transcripts concurrently."""
-    logger.info(f"Judging {len(transcripts)} transcripts...")
+    """Judge all transcripts concurrently.
+
+    Transcripts with no target responses are skipped — a judge cannot
+    meaningfully score a conversation the target never participated in.
+    """
+    valid = []
+    for t in transcripts:
+        if _has_target_response(t):
+            valid.append(t)
+        else:
+            logger.warning(
+                f"Skipping transcript {t.transcript_id}: no target responses "
+                f"(scenario {t.scenario_id}). Cannot judge a one-sided conversation."
+            )
+
+    logger.info(f"Judging {len(valid)} transcripts (skipped {len(transcripts) - len(valid)} with no target responses)...")
 
     semaphore = asyncio.Semaphore(max_concurrent)
     tasks = [
-        _judge_single(config, behavior, t, client, semaphore) for t in transcripts
+        _judge_single(config, behavior, t, client, semaphore) for t in valid
     ]
 
     results = await asyncio.gather(*tasks, return_exceptions=True)

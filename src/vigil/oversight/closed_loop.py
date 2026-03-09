@@ -42,6 +42,11 @@ def create_closed_loop_session(
         if not judgment:
             continue
 
+        # Skip transcripts where the target never responded — these
+        # cannot be meaningfully reviewed by a human.
+        if not any(m.role == "target" for m in transcript.messages):
+            continue
+
         score = judgment.scores.behavior_presence
         scenario = scenarios_by_id.get(transcript.scenario_id)
         scenario_title = scenario.title if scenario else ""

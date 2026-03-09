@@ -1,9 +1,8 @@
 """Tests for pipeline stages (with mocked LLM client)."""
 
-import pytest
-
+from vigil.models import Message, Transcript
 from vigil.pipeline.scenarios import _parse_scenarios
-from vigil.pipeline.judgment import _parse_judgment
+from vigil.pipeline.judgment import _has_target_response, _parse_judgment
 from vigil.prompts.attacks import make_attacker_system_prompt, make_continuation_prompt, PERSISTENCE_INSTRUCTIONS
 from vigil.prompts.scenarios import make_scenario_prompt, make_system_prompt
 from vigil.prompts.judgment import make_judge_system_prompt, make_judge_prompt
@@ -68,6 +67,32 @@ class TestScenarioParsing:
         text = "\n".join(blocks)
         scenarios = _parse_scenarios(text, "test")
         assert len(scenarios) == 10
+
+
+class TestHasTargetResponse:
+    def test_normal_transcript_has_target(self):
+        t = Transcript(scenario_id="sc-1", messages=[
+            Message(role="attacker", content="Hello", model="test/attacker"),
+            Message(role="target", content="Hi there", model="test/target"),
+        ])
+        assert _has_target_response(t) is True
+
+    def test_attacker_only_transcript(self):
+        t = Transcript(scenario_id="sc-1", messages=[
+            Message(role="attacker", content="Solo attack <END>", model="test/attacker"),
+        ])
+        assert _has_target_response(t) is False
+
+    def test_empty_transcript(self):
+        t = Transcript(scenario_id="sc-1", messages=[])
+        assert _has_target_response(t) is False
+
+    def test_multiple_attacker_messages_no_target(self):
+        t = Transcript(scenario_id="sc-1", messages=[
+            Message(role="attacker", content="First", model="test/attacker"),
+            Message(role="attacker", content="Second", model="test/attacker"),
+        ])
+        assert _has_target_response(t) is False
 
 
 class TestJudgmentParsing:
