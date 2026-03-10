@@ -104,31 +104,29 @@ class ConversationOrchestrator:
                 Message(role="attacker", content=self._strip_end_tag(attacker_text) if has_end else attacker_text, model=self.attacker_model)
             )
 
-            # Check for end signal (only after min_turns)
-            if has_end:
-                clean_text = self._strip_end_tag(attacker_text)
-                if clean_text:
-                    self.target_messages.append({"role": "user", "content": clean_text})
-                logger.info(f"Attacker ended conversation at turn {turn + 1}")
-                break
-
             # Add attacker message to target's history (as user message)
-            self.target_messages.append({"role": "user", "content": attacker_text})
+            clean_text = self._strip_end_tag(attacker_text) if has_end else attacker_text
+            if clean_text:
+                self.target_messages.append({"role": "user", "content": clean_text})
 
-            # Target turn
+            # Target always responds — the judge needs to see the target's
+            # reaction to every attacker message, including the final one.
             target_text = await self._target_turn()
             self.transcript_messages.append(
                 Message(role="target", content=target_text, model=self.target_model)
             )
 
-            # Add target response to attacker's history
-            self.attacker_messages.append({"role": "assistant", "content": attacker_text})
+            # Add to histories for next turn
+            self.attacker_messages.append({"role": "assistant", "content": self._strip_end_tag(attacker_text) if has_end else attacker_text})
             self.attacker_messages.append({"role": "user", "content": target_text})
-
-            # Add target response to target's history
             self.target_messages.append({"role": "assistant", "content": target_text})
 
             logger.debug(f"Turn {turn + 1}/{self.max_turns} complete")
+
+            # End the conversation after the target has responded
+            if has_end:
+                logger.info(f"Attacker ended conversation at turn {turn + 1}")
+                break
 
         return Transcript(
             scenario_id=self.scenario_id,
