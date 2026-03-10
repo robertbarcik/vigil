@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import random
 
 from vigil.models import OversightSession, ReviewItem, RunResult
+
+logger = logging.getLogger(__name__)
 
 
 def format_transcript_for_review(transcript_messages: list, scenario_title: str = "") -> str:
@@ -87,6 +90,15 @@ def create_closed_loop_session(
             target_clean = len(clean)
         else:
             target_clean = 0
+
+        if target_clean > 0 and len(clean) == 0:
+            logger.warning(
+                "All %d transcripts scored above threshold (%.1f) — no clean items "
+                "available. The session will contain only compromised items, which "
+                "means a reviewer can achieve 100%% detection by flagging everything. "
+                "Consider lowering the threshold or running more scenarios.",
+                num_compromised, threshold,
+            )
 
         random.shuffle(clean)
         selected_clean = clean[:target_clean]

@@ -8,12 +8,17 @@ import logging
 import click
 
 
-def _setup_logging(verbose: bool) -> None:
+def _setup_logging(verbose: bool, log_file: str | None = None) -> None:
     level = logging.DEBUG if verbose else logging.INFO
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    if log_file:
+        handlers.append(logging.FileHandler(log_file))
     logging.basicConfig(
         level=level,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S",
+        handlers=handlers,
+        force=True,
     )
     # Quiet down noisy loggers unless debug
     if not verbose:
@@ -33,12 +38,13 @@ def main():
 @click.option("-v", "--verbose", is_flag=True, help="Enable debug logging")
 def run(config_path: str, verbose: bool):
     """Run a red-team evaluation pipeline."""
-    _setup_logging(verbose)
-
-    from vigil.config import load_config
+    from vigil.config import get_run_dir, load_config
     from vigil.pipeline.core import run_pipeline
 
     config = load_config(config_path)
+    log_path = get_run_dir(config.run_id) / "run.log"
+    _setup_logging(verbose, log_file=str(log_path))
+
     click.echo(f"Starting Vigil run {config.run_id}")
     click.echo(f"  Behavior:    {config.behavior}")
     click.echo(f"  Target:      {config.target_model}")
@@ -47,6 +53,7 @@ def run(config_path: str, verbose: bool):
     click.echo(f"  Scenarios:   {config.num_scenarios}")
     click.echo(f"  Turns:       {config.min_turns}-{config.num_turns}")
     click.echo(f"  Persistence: {config.attacker_persistence}")
+    click.echo(f"  Log:         {log_path}")
     click.echo()
 
     result = asyncio.run(run_pipeline(config))
@@ -96,6 +103,8 @@ def sweep(behaviors: tuple[str], target: str, attacker: str, judge: str,
     click.echo(f"  Behaviors: {', '.join(behavior_list)}")
     click.echo()
 
+    from vigil.config import get_run_dir
+
     results = []
     for i, behavior in enumerate(behavior_list, 1):
         click.echo(f"[{i}/{len(behavior_list)}] Testing: {behavior}")
@@ -109,6 +118,8 @@ def sweep(behaviors: tuple[str], target: str, attacker: str, judge: str,
             min_turns=min_turns,
             attacker_persistence=persistence,
         )
+        log_path = get_run_dir(config.run_id) / "run.log"
+        _setup_logging(verbose, log_file=str(log_path))
         result = asyncio.run(run_pipeline(config))
         results.append((behavior, result))
         click.echo(
@@ -210,10 +221,22 @@ def oversight(model: str, topic: str, items: int, issue_ratio: float,
         save_oversight_session(session)
 
         compromised = sum(1 for i in session.items if i.has_issue)
+        clean = len(session.items) - compromised
         click.echo(f"Closed-loop oversight session created: {session.session_id}")
         click.echo(f"  Source run: {from_run}")
-        click.echo(f"  Items: {len(session.items)} ({compromised} compromised, {len(session.items) - compromised} clean)")
+        click.echo(f"  Items: {len(session.items)} ({compromised} compromised, {clean} clean)")
         click.echo(f"  Threshold: {threshold}")
+        if compromised > 0 and clean == 0:
+            click.echo()
+            click.echo(
+                "  WARNING: All transcripts scored above threshold — no clean items available."
+            )
+            click.echo(
+                "  A reviewer can achieve 100% detection by flagging everything."
+            )
+            click.echo(
+                "  Consider lowering --threshold or running more scenarios to get a mix."
+            )
         click.echo("  Start reviewing at: vigil serve → Human Review")
         return
 
