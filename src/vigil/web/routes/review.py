@@ -19,8 +19,7 @@ DEFAULT_REVIEWER = "reviewer-1"
 async def sessions_list(request: Request):
     templates = get_templates()
     sessions = list_oversight_sessions()
-    return templates.TemplateResponse("review.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "review.html", {
         "sessions": sessions,
     })
 
@@ -42,8 +41,7 @@ async def review_item(request: Request, session_id: str, reviewer: str = DEFAULT
 
     item = pending[0]
 
-    return templates.TemplateResponse("review_item.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "review_item.html", {
         "session": session,
         "item": item,
         "reviewer": reviewer,
@@ -104,8 +102,7 @@ async def review_results(request: Request, session_id: str, reviewer: str = DEFA
                 "correct": correct,
             })
 
-    return templates.TemplateResponse("review_results.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "review_results.html", {
         "session": session,
         "scores": scores,
         "decisions_detail": decisions_detail,

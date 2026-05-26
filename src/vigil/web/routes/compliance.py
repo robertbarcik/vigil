@@ -29,8 +29,7 @@ router = APIRouter()
 async def compliance_list(request: Request):
     templates = get_templates()
     reports = list_compliance_reports()
-    return templates.TemplateResponse("compliance_list.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "compliance_list.html", {
         "reports": reports,
     })
 
@@ -41,8 +40,7 @@ async def compliance_generate_form(request: Request):
     runs_data = list_runs()
     sessions = list_oversight_sessions()
     campaigns = list_campaigns()
-    return templates.TemplateResponse("compliance_generate.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "compliance_generate.html", {
         "runs": runs_data,
         "sessions": sessions,
         "campaigns": campaigns,
@@ -101,8 +99,7 @@ async def compliance_report_view(request: Request, report_id: str):
     if not report:
         return HTMLResponse("Report not found", status_code=404)
 
-    return templates.TemplateResponse("compliance_report.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "compliance_report.html", {
         "report": report,
     })
 

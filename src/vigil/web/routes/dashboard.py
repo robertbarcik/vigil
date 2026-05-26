@@ -28,8 +28,7 @@ async def dashboard(request: Request):
     campaigns = list_campaigns()
     reports = list_compliance_reports()
 
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "dashboard.html", {
         "runs": run_data,
         "sessions": sessions[:10],
         "campaigns": campaigns,

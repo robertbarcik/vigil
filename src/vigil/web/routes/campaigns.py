@@ -26,8 +26,7 @@ async def campaigns_list(request: Request):
             "reviewer_count": len(c.reviewer_ids),
         })
 
-    return templates.TemplateResponse("campaigns_list.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "campaigns_list.html", {
         "campaigns": campaign_data,
     })
 
@@ -54,8 +53,7 @@ async def campaign_detail(request: Request, campaign_id: str):
         reviewer_trends[reviewer_id] = trends
         reviewer_fatigue[reviewer_id] = detect_fatigue(trends)
 
-    return templates.TemplateResponse("campaign_detail.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "campaign_detail.html", {
         "campaign": campaign,
         "sessions": sessions,
         "reviewer_trends": reviewer_trends,

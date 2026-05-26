@@ -21,8 +21,7 @@ async def runs_list(request: Request):
         result = get_run(config.run_id)
         run_data.append({"config": config, "result": result})
 
-    return templates.TemplateResponse("redteam_runs.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "redteam_runs.html", {
         "runs": run_data,
     })
 
@@ -42,8 +41,7 @@ async def run_detail(request: Request, run_id: str):
     for j in result.judgments:
         judgment_by_scenario[j.scenario_id] = j
 
-    return templates.TemplateResponse("redteam_detail.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "redteam_detail.html", {
         "result": result,
         "behavior": behavior,
         "judgment_by_scenario": judgment_by_scenario,
@@ -64,8 +62,7 @@ async def transcript_view(request: Request, run_id: str, transcript_id: str):
     scenario = next((s for s in result.scenarios if s.scenario_id == transcript.scenario_id), None)
     judgment = next((j for j in result.judgments if j.transcript_id == transcript_id), None)
 
-    return templates.TemplateResponse("transcript.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "transcript.html", {
         "result": result,
         "transcript": transcript,
         "scenario": scenario,
