@@ -94,6 +94,19 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+### Zero-friction demo (no API key needed)
+
+Want to see the dashboard, a red-team transcript, and the Level 1 human review flow without spending a cent? Vigil ships with a sample red-team run and a sample oversight session:
+
+```bash
+vigil demo load   # copies bundled fixtures into ~/.vigil/
+vigil serve       # → open http://127.0.0.1:8080
+```
+
+You'll get a populated dashboard with one red-team run (`information-leakage` against Llama 3.3 70B), its scenarios and transcripts, and one 15-item Level 1 oversight session on cybersecurity incident response. Click through "Human Review" to test your own vigilance against the planted issues.
+
+To run real evaluations of your own, continue with the steps below.
+
 ### 2. Set your OpenRouter API key
 
 ```bash
@@ -711,6 +724,8 @@ vigil probes create SID              Create probe pool from oversight session
   --ttl HOURS                        Probe expiry time (default: 0 = no expiry)
 vigil probes list                    List all probe pools
 vigil probes show POOL_ID            Show pool stats + scoring results
+vigil demo load                      Load bundled sample run + oversight session
+  --force                            Overwrite existing data on ID collision
 vigil init                           Create vigil.yaml and .env templates
 ```
 

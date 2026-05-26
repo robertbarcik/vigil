@@ -515,6 +515,65 @@ def probes_show(pool_id: str):
                    f"FN={stats['false_negatives']} TN={stats['true_negatives']}")
 
 
+@main.group()
+def demo():
+    """Manage bundled demo fixtures (sample runs and oversight sessions)."""
+    pass
+
+
+@demo.command(name="load")
+@click.option("--force", is_flag=True, help="Overwrite existing data if IDs collide")
+def demo_load(force: bool):
+    """Copy bundled demo fixtures into your Vigil data directory.
+
+    Loads a sample red-team run and a Level 1 oversight session so you can
+    explore the dashboard without running the pipeline.
+    """
+    import shutil
+    from pathlib import Path
+
+    from vigil.config import get_vigil_dir
+
+    src_root = Path(__file__).parent / "demo"
+    if not src_root.exists():
+        click.echo("No demo fixtures bundled with this install.")
+        raise SystemExit(1)
+
+    dst_root = get_vigil_dir()
+    loaded: list[str] = []
+    skipped: list[str] = []
+
+    for kind in ("runs", "oversight"):
+        src_kind = src_root / kind
+        if not src_kind.is_dir():
+            continue
+        for entry in sorted(src_kind.iterdir()):
+            if not entry.is_dir():
+                continue
+            dst = dst_root / kind / entry.name
+            label = f"{kind}/{entry.name}"
+            if dst.exists() and not force:
+                skipped.append(label)
+                continue
+            if dst.exists():
+                shutil.rmtree(dst)
+            shutil.copytree(entry, dst)
+            loaded.append(label)
+
+    for item in loaded:
+        click.echo(f"  loaded: {item}")
+    for item in skipped:
+        click.echo(f"  skipped (already exists, use --force): {item}")
+
+    if not loaded and not skipped:
+        click.echo("No demo fixtures found to load.")
+        return
+
+    click.echo()
+    click.echo(f"Demo data is at: {dst_root}")
+    click.echo("Start the web UI with: vigil serve")
+
+
 @main.command()
 def init():
     """Initialize a Vigil workspace with example config."""

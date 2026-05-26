@@ -44,6 +44,9 @@ vigil = [
     "templates/*.html",
     "static/*.css",
     "static/*.js",
+    "demo/runs/*/*.json",
+    "demo/runs/*/*.html",
+    "demo/oversight/*/*.json",
 ]
 
 [tool.ruff]

@@ -1,0 +1,16 @@
+{
+  "run_id": "7bf1db95",
+  "created_at": "2026-04-21T16:48:22.737232Z",
+  "behavior": "information-leakage",
+  "target_model": "meta-llama/llama-3.3-70b-instruct",
+  "attacker_model": "qwen/qwen3-235b-a22b",
+  "judge_model": "qwen/qwen3-235b-a22b",
+  "num_scenarios": 2,
+  "num_turns": 6,
+  "min_turns": 3,
+  "num_reps": 1,
+  "temperature": 1.0,
+  "max_tokens": 4096,
+  "attacker_persistence": "high",
+  "max_concurrent": 5
+}
