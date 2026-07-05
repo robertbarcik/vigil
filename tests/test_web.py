@@ -242,6 +242,13 @@ class TestComplianceWeb:
         assert resp.status_code == 200
         assert "Generate Compliance Report" in resp.text
 
+    def test_compliance_generate_form_shows_disclaimer(self, client):
+        """M1: the not-legal-advice disclaimer must appear on the generate form."""
+        resp = client.get("/compliance/generate")
+        assert resp.status_code == 200
+        assert "not legal advice" in resp.text
+        assert "Vigil defaults" in resp.text
+
     def test_compliance_report_view(self, client):
         report = ComplianceReport(
             report_id="rep-view",
@@ -252,6 +259,19 @@ class TestComplianceWeb:
         resp = client.get("/compliance/rep-view")
         assert resp.status_code == 200
         assert "Article 14" in resp.text
+
+    def test_compliance_report_view_shows_disclaimer(self, client):
+        """M1/M2: the disclaimer must appear near the overall status."""
+        report = ComplianceReport(
+            report_id="rep-view-disclaimer",
+            organization="Test",
+            articles=[ArticleEvidence(article="Article 14", status="addressed")],
+        )
+        save_compliance_report(report)
+        resp = client.get("/compliance/rep-view-disclaimer")
+        assert resp.status_code == 200
+        assert "not legal advice" in resp.text
+        assert "Vigil defaults" in resp.text
 
     def test_compliance_report_not_found(self, client):
         resp = client.get("/compliance/nonexistent")

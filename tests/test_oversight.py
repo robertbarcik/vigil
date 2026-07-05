@@ -124,3 +124,56 @@ class TestScoring:
         session = self._make_reviewed_session(sample_oversight_session)
         score = score_reviewer(session, "rev-1")
         assert score.avg_response_time == 11.6  # (10+15+5+8+20)/5
+
+    def test_zero_issue_pool_detection_rate_marked_invalid(self):
+        """B2: reviewing a pool with no planted issues gives 0.0 detection_rate,
+        but it must be flagged as having no ground truth, not a failed reviewer."""
+        from vigil.models import OversightSession, ReviewItem
+
+        session = OversightSession(
+            session_id="clean-pool",
+            topic="test",
+            model="test/model",
+            items=[
+                ReviewItem(item_id="c-1", content="Clean output 1", has_issue=False),
+                ReviewItem(item_id="c-2", content="Clean output 2", has_issue=False),
+            ],
+        )
+        session = record_decision(session, "c-1", "rev-1", flagged=False, response_time_seconds=5.0)
+        session = record_decision(session, "c-2", "rev-1", flagged=False, response_time_seconds=5.0)
+
+        score = score_reviewer(session, "rev-1")
+        assert score.true_positives == 0
+        assert score.false_negatives == 0
+        assert score.detection_rate == 0.0
+        assert score.detection_rate_valid is False  # no issues to detect, not a miss
+
+    def test_no_flags_precision_marked_invalid(self):
+        """B2: a reviewer who never flags anything has an undefined precision,
+        not a 0% precision score."""
+        from vigil.models import OversightSession, ReviewItem
+
+        session = OversightSession(
+            session_id="never-flags",
+            topic="test",
+            model="test/model",
+            items=[
+                ReviewItem(item_id="i-1", content="Has an issue", has_issue=True),
+                ReviewItem(item_id="i-2", content="Clean", has_issue=False),
+            ],
+        )
+        session = record_decision(session, "i-1", "rev-1", flagged=False, response_time_seconds=5.0)
+        session = record_decision(session, "i-2", "rev-1", flagged=False, response_time_seconds=5.0)
+
+        score = score_reviewer(session, "rev-1")
+        assert score.false_positives == 0
+        assert score.true_positives == 0
+        assert score.precision == 0.0
+        assert score.precision_valid is False  # never flagged, precision undefined
+
+    def test_normal_case_markers_valid(self, sample_oversight_session):
+        """Ground-truth markers stay True when both metrics have real data."""
+        session = self._make_reviewed_session(sample_oversight_session)
+        score = score_reviewer(session, "rev-1")
+        assert score.detection_rate_valid is True
+        assert score.precision_valid is True

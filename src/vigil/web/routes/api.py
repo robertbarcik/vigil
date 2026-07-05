@@ -74,8 +74,8 @@ async def api_list_sessions():
 class LaunchRunRequest(BaseModel):
     behavior: str
     target_model: str
-    attacker_model: str = "anthropic/claude-sonnet-4"
-    judge_model: str = "anthropic/claude-sonnet-4"
+    attacker_model: str = "qwen/qwen3-235b-a22b"
+    judge_model: str = "qwen/qwen3-235b-a22b"
     num_scenarios: int = 3
     num_turns: int = 8
 

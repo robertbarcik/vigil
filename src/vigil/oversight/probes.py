@@ -138,8 +138,14 @@ def get_pool_stats(pool: ProbePool) -> dict:
         else:
             tn += 1
 
-    detection_rate = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    # tp + fn == 0 means no completed probes actually had a planted issue, so
+    # detection_rate has no ground truth to measure against (not a 0% score).
+    # tp + fp == 0 means nothing was flagged, so precision is similarly
+    # undefined rather than a 0% score. Mirrors ReviewerScore (B2) in scoring.py.
+    detection_rate_valid = (tp + fn) > 0
+    precision_valid = (tp + fp) > 0
+    detection_rate = tp / (tp + fn) if detection_rate_valid else 0.0
+    precision = tp / (tp + fp) if precision_valid else 0.0
     avg_response_time = sum(response_times) / len(response_times) if response_times else 0.0
 
     return {
@@ -155,4 +161,6 @@ def get_pool_stats(pool: ProbePool) -> dict:
         "detection_rate": round(detection_rate, 3),
         "precision": round(precision, 3),
         "avg_response_time": round(avg_response_time, 1),
+        "detection_rate_valid": detection_rate_valid,
+        "precision_valid": precision_valid,
     }

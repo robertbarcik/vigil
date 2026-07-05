@@ -37,8 +37,8 @@ class RunConfig(BaseModel):
     created_at: datetime = Field(default_factory=_now)
     behavior: str
     target_model: str
-    attacker_model: str = "anthropic/claude-sonnet-4"
-    judge_model: str = "anthropic/claude-sonnet-4"
+    attacker_model: str = "qwen/qwen3-235b-a22b"
+    judge_model: str = "qwen/qwen3-235b-a22b"
     num_scenarios: int = 5
     num_turns: int = 10
     min_turns: int = 3  # attacker must engage for at least this many turns
@@ -143,6 +143,14 @@ class ReviewerScore(BaseModel):
     precision: float = 0.0
     avg_response_time: float = 0.0
     vigilance_score: float = 0.0
+    # Ground-truth validity markers (B2): detection_rate is only meaningful when
+    # there were actual planted issues to find (tp + fn > 0); precision is only
+    # meaningful when the reviewer flagged at least one item (tp + fp > 0).
+    # When False, the corresponding 0.0 default is "insufficient ground truth",
+    # not "detected/flagged nothing"; consumers should exclude these from
+    # averages rather than treating them as a worst-case score.
+    detection_rate_valid: bool = True
+    precision_valid: bool = True
 
 
 class OversightSession(BaseModel):

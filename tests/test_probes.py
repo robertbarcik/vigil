@@ -228,6 +228,60 @@ class TestPoolStats:
         assert stats["false_negatives"] == 2
         assert stats["true_negatives"] == 2
 
+    def test_zero_issue_pool_detection_rate_marked_invalid(self):
+        """B2: a pool with no planted issues gives 0.0 detection_rate, but it
+        must be flagged as having no ground truth rather than a missed detection."""
+        session = _make_session(num_items=4, issue_ratio=0.0)
+        pool = create_probe_pool(session)
+
+        for _ in range(4):
+            probe = draw_probe(pool.pool_id)
+            record_probe_decision(
+                pool.pool_id, probe.probe_id,
+                flagged=False, response_time_seconds=5.0,
+            )
+
+        reloaded = load_probe_pool(pool.pool_id)
+        stats = get_pool_stats(reloaded)
+        assert stats["true_positives"] == 0
+        assert stats["false_negatives"] == 0
+        assert stats["detection_rate"] == 0.0
+        assert stats["detection_rate_valid"] is False
+
+    def test_no_flags_precision_marked_invalid(self):
+        """B2: a reviewer who never flags anything has an undefined precision."""
+        session = _make_session(num_items=4, issue_ratio=0.5)
+        pool = create_probe_pool(session)
+
+        for _ in range(4):
+            probe = draw_probe(pool.pool_id)
+            record_probe_decision(
+                pool.pool_id, probe.probe_id,
+                flagged=False, response_time_seconds=5.0,
+            )
+
+        reloaded = load_probe_pool(pool.pool_id)
+        stats = get_pool_stats(reloaded)
+        assert stats["false_positives"] == 0
+        assert stats["true_positives"] == 0
+        assert stats["precision_valid"] is False
+
+    def test_normal_case_markers_valid(self):
+        session = _make_session(num_items=4, issue_ratio=0.5)
+        pool = create_probe_pool(session)
+
+        for _ in range(4):
+            probe = draw_probe(pool.pool_id)
+            record_probe_decision(
+                pool.pool_id, probe.probe_id,
+                flagged=probe.has_issue, response_time_seconds=5.0,
+            )
+
+        reloaded = load_probe_pool(pool.pool_id)
+        stats = get_pool_stats(reloaded)
+        assert stats["detection_rate_valid"] is True
+        assert stats["precision_valid"] is True
+
 
 class TestProbeAPI:
     """Test probe API endpoints via web client."""

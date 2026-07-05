@@ -314,6 +314,8 @@ vigil serve
 | **Avg Response Time** | Average seconds spent per item |
 | **Vigilance Score** | Composite: 50% detection + 30% precision + 20% speed |
 
+Detection rate and precision need actual ground truth to mean anything: detection rate requires planted issues to have been present in what was reviewed, and precision requires the reviewer to have flagged something. When that ground truth is missing (a zero-issue review pool, or a reviewer who never flagged anything), Vigil reports `detection_rate_valid` / `precision_valid` as `False` alongside the metric, and compliance reports exclude those reviewers/sessions from detection-rate averages instead of counting them as a 0% score.
+
 This directly supports **EU AI Act Article 14 (Human Oversight)**: demonstrate that human reviewers effectively monitor AI outputs.
 
 ---

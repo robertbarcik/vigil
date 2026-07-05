@@ -77,7 +77,7 @@ class TestLoadConfig:
             "target_model: test/model\n"
         )
         config = load_config(config_path)
-        assert config.attacker_model == "anthropic/claude-sonnet-4"
+        assert config.attacker_model == "qwen/qwen3-235b-a22b"
         assert config.num_turns == 10
         assert config.min_turns == 3
 

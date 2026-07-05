@@ -30,13 +30,19 @@ def collect_evidence(
             f"(elicitation rate {run.summary.elicitation_rate:.0%})"
         )
 
-    # Index oversight session detection rates
+    # Index oversight session detection rates.
+    # Only reviewers who actually had planted issues to find contribute a
+    # meaningful detection rate (B2, see ReviewerScore.detection_rate_valid);
+    # a reviewer scored against a zero-issue pool has no ground truth, not a
+    # 0% detection rate, so they're excluded from the average rather than
+    # dragging it down.
     session_detection_rates: list[float] = []
     session_ids: list[str] = []
     for session in sessions:
         scores = score_all_reviewers(session)
-        if scores:
-            avg_detection = sum(s.detection_rate for s in scores.values()) / len(scores)
+        valid_rates = [s.detection_rate for s in scores.values() if s.detection_rate_valid]
+        if valid_rates:
+            avg_detection = sum(valid_rates) / len(valid_rates)
             session_detection_rates.append(avg_detection)
             session_ids.append(session.session_id)
 
@@ -60,7 +66,14 @@ def collect_evidence(
             if session_detection_rates else 0.0
         )
 
-        status = assess_status(avg_score, avg_detection, bool(article_scores), bool(sessions))
+        # B1: gate on sessions that actually produced a detection score, not on
+        # the raw session list. A session with items but zero reviewer
+        # decisions (or one scored entirely against a zero-issue pool, per B2)
+        # contributes nothing measurable and must not be treated as oversight
+        # evidence showing a 0% detection rate.
+        status = assess_status(
+            avg_score, avg_detection, bool(article_scores), bool(session_detection_rates)
+        )
 
         evidence_list.append(ArticleEvidence(
             article=article_name,

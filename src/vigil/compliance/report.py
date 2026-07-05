@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+import html
+
 from vigil.compliance.evidence import collect_evidence
 from vigil.models import ComplianceReport, RunResult, OversightSession
 from vigil.storage import save_compliance_report
+
+# M1/M2: shown near the overall status in every rendered report (standalone
+# HTML here, and the web templates compliance_report.html / compliance_generate.html).
+COMPLIANCE_DISCLAIMER = (
+    "This report is engineering evidence from heuristic red-team and human-oversight "
+    "testing. It is not legal advice, not a certification, and not a substitute for a "
+    "conformity assessment under the EU AI Act. Status thresholds (avg score <4/>6, "
+    "detection >70%/<50%) are Vigil defaults, not regulatory values."
+)
 
 
 def generate_compliance_report(
@@ -98,18 +109,18 @@ def render_compliance_html(report: ComplianceReport) -> str:
         findings_html = ""
         if article.red_team_findings:
             findings_html = "<ul>" + "".join(
-                f"<li>{f}</li>" for f in article.red_team_findings
+                f"<li>{html.escape(f)}</li>" for f in article.red_team_findings
             ) + "</ul>"
 
         articles_html += f"""
         <div class="article" style="border-left: 4px solid {color}; padding: 16px; margin: 16px 0; background: #1a1a2e;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; color: #e0e0e0;">{article.article}</h3>
-                <span style="background: {color}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 0.85em;">{label}</span>
+                <h3 style="margin: 0; color: #e0e0e0;">{html.escape(article.article)}</h3>
+                <span style="background: {color}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 0.85em;">{html.escape(label)}</span>
             </div>
-            <p style="color: #a0a0a0; margin: 8px 0;">{article.summary}</p>
+            <p style="color: #a0a0a0; margin: 8px 0;">{html.escape(article.summary)}</p>
             <div style="display: flex; gap: 24px; margin-top: 8px; font-size: 0.9em;">
-                <span style="color: #9ca3af;">Risk Level: <strong style="color: #e0e0e0;">{article.risk_level}</strong></span>
+                <span style="color: #9ca3af;">Risk Level: <strong style="color: #e0e0e0;">{html.escape(article.risk_level)}</strong></span>
                 <span style="color: #9ca3af;">Avg AI Score: <strong style="color: {'#ef4444' if article.avg_behavior_score > 6 else '#22c55e' if article.avg_behavior_score < 4 else '#eab308'};">{article.avg_behavior_score}/10</strong></span>
                 <span style="color: #9ca3af;">Detection Rate: <strong style="color: {'#22c55e' if article.avg_detection_rate > 0.7 else '#ef4444' if article.avg_detection_rate < 0.5 else '#eab308'};">{article.avg_detection_rate:.0%}</strong></span>
             </div>
@@ -125,7 +136,7 @@ def render_compliance_html(report: ComplianceReport) -> str:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{report.title}</title>
+    <title>{html.escape(report.title)}</title>
     <style>
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f23; color: #e0e0e0; max-width: 900px; margin: 0 auto; padding: 40px 20px; }}
         h1 {{ color: #38bdf8; }}
@@ -133,29 +144,31 @@ def render_compliance_html(report: ComplianceReport) -> str:
         .meta {{ color: #9ca3af; font-size: 0.9em; margin: 16px 0; }}
         .overall {{ display: inline-block; background: {overall_color}; color: white; padding: 8px 20px; border-radius: 6px; font-size: 1.1em; font-weight: bold; }}
         .summary {{ background: #1a1a2e; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6; }}
+        .disclaimer {{ color: #9ca3af; font-size: 0.85em; font-style: italic; margin: 12px 0 20px; line-height: 1.5; border-left: 3px solid #6b7280; padding-left: 12px; }}
         ul {{ color: #9ca3af; }}
         .footer {{ color: #6b7280; font-size: 0.8em; margin-top: 40px; border-top: 1px solid #333; padding-top: 16px; }}
     </style>
 </head>
 <body>
-    <h1>{report.title}</h1>
+    <h1>{html.escape(report.title)}</h1>
     <div class="meta">
-        {f'<strong>Organization:</strong> {report.organization}<br>' if report.organization else ''}
+        {f'<strong>Organization:</strong> {html.escape(report.organization)}<br>' if report.organization else ''}
         <strong>Generated:</strong> {report.created_at.strftime('%Y-%m-%d %H:%M UTC')}<br>
-        <strong>Models Tested:</strong> {', '.join(report.target_models) or 'None'}<br>
+        <strong>Models Tested:</strong> {html.escape(', '.join(report.target_models) or 'None')}<br>
         <strong>Red-Team Runs:</strong> {len(report.run_ids)} &middot; <strong>Oversight Sessions:</strong> {len(report.session_ids)}
     </div>
 
     <h2>Overall Status</h2>
     <div class="overall">{overall_label}</div>
-    <div class="summary">{report.summary_text}</div>
+    <div class="disclaimer">{html.escape(COMPLIANCE_DISCLAIMER)}</div>
+    <div class="summary">{html.escape(report.summary_text)}</div>
 
     <h2>Article-by-Article Evidence</h2>
     {articles_html}
 
     <div class="footer">
         Generated by Vigil v0.2.0 — LLM Red-Teaming & Human Oversight Testing Framework<br>
-        Report ID: {report.report_id}
+        Report ID: {html.escape(report.report_id)}
     </div>
 </body>
 </html>"""

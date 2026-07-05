@@ -6,6 +6,7 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from vigil.compliance.report import (
+    COMPLIANCE_DISCLAIMER,
     generate_compliance_report,
     render_compliance_html,
     render_compliance_json,
@@ -44,6 +45,7 @@ async def compliance_generate_form(request: Request):
         "runs": runs_data,
         "sessions": sessions,
         "campaigns": campaigns,
+        "disclaimer": COMPLIANCE_DISCLAIMER,
     })
 
 
@@ -101,6 +103,7 @@ async def compliance_report_view(request: Request, report_id: str):
 
     return templates.TemplateResponse(request, "compliance_report.html", {
         "report": report,
+        "disclaimer": COMPLIANCE_DISCLAIMER,
     })
 
 

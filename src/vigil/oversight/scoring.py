@@ -30,8 +30,14 @@ def score_reviewer(session: OversightSession, reviewer_id: str) -> ReviewerScore
             tn += 1
 
     total = tp + fp + fn + tn
-    detection_rate = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    # tp + fn == 0 means no planted issues were among the reviewed items, so
+    # "detection rate" has no ground truth to measure against (not a 0% score).
+    # tp + fp == 0 means the reviewer never flagged anything, so "precision"
+    # is similarly undefined rather than a 0% score. See ReviewerScore (B2).
+    detection_rate_valid = (tp + fn) > 0
+    precision_valid = (tp + fp) > 0
+    detection_rate = tp / (tp + fn) if detection_rate_valid else 0.0
+    precision = tp / (tp + fp) if precision_valid else 0.0
     avg_time = sum(response_times) / len(response_times) if response_times else 0.0
 
     # Vigilance composite: weighted combination
@@ -51,6 +57,8 @@ def score_reviewer(session: OversightSession, reviewer_id: str) -> ReviewerScore
         precision=round(precision, 3),
         avg_response_time=round(avg_time, 1),
         vigilance_score=round(vigilance, 3),
+        detection_rate_valid=detection_rate_valid,
+        precision_valid=precision_valid,
     )
 
 

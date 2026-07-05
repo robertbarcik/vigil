@@ -22,7 +22,7 @@ class TestRunConfig:
     def test_defaults(self):
         config = RunConfig(behavior="test", target_model="test/model")
         assert config.run_id
-        assert config.attacker_model == "anthropic/claude-sonnet-4"
+        assert config.attacker_model == "qwen/qwen3-235b-a22b"
         assert config.num_scenarios == 5
         assert config.num_turns == 10
         assert config.min_turns == 3
