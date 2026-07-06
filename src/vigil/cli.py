@@ -366,11 +366,18 @@ def campaign_show(campaign_id: str):
 
 @main.command(name="report")
 @click.option("--campaign", "campaign_id", default=None, help="Generate from campaign")
-@click.option("--run", "run_id", default=None, help="Include specific run")
-@click.option("--session", "session_id", default=None, help="Include specific oversight session")
+@click.option("--run", "run_ids", multiple=True, help="Include a run (repeatable)")
+@click.option("--session", "session_ids", multiple=True,
+              help="Include an oversight session (repeatable)")
 @click.option("--org", default="", help="Organization name")
-def report(campaign_id: str | None, run_id: str | None, session_id: str | None, org: str):
-    """Generate an EU AI Act compliance evidence report."""
+def report(campaign_id: str | None, run_ids: tuple[str, ...],
+           session_ids: tuple[str, ...], org: str):
+    """Generate an EU AI Act compliance evidence report.
+
+    Evidence aggregates across everything you pass, so --run and --session are
+    repeatable (e.g. --run A --run B --session X) to build one report from
+    several runs and sessions.
+    """
     from vigil.compliance.report import generate_compliance_report, render_compliance_html
     from vigil.storage import get_run, load_campaign, load_oversight_session
 
@@ -392,7 +399,7 @@ def report(campaign_id: str | None, run_id: str | None, session_id: str | None, 
                     if r and r.run_id not in [x.run_id for x in runs]:
                         runs.append(r)
 
-    if run_id:
+    for run_id in run_ids:
         r = get_run(run_id)
         if not r:
             click.echo(f"Run not found: {run_id}")
@@ -400,7 +407,7 @@ def report(campaign_id: str | None, run_id: str | None, session_id: str | None, 
         if r.run_id not in [x.run_id for x in runs]:
             runs.append(r)
 
-    if session_id:
+    for session_id in session_ids:
         s = load_oversight_session(session_id)
         if not s:
             click.echo(f"Session not found: {session_id}")
@@ -572,6 +579,9 @@ def demo_load(force: bool):
     click.echo()
     click.echo(f"Demo data is at: {dst_root}")
     click.echo("Start the web UI with: vigil serve")
+    click.echo("See a populated compliance report with:")
+    click.echo("  vigil report --run 7bf1db95 --run c4e7a9d2 "
+               "--session 1f35123a --session e2b8f5a3 --org 'Demo Corp'")
 
 
 @main.command()
